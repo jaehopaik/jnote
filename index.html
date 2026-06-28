@@ -506,7 +506,7 @@ tbody td { padding: 12px 16px; vertical-align: middle; }
     <div class="card">
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>매수날짜</th><th>매도날짜</th><th>종목</th><th>시장</th><th>수량</th><th>매수가</th><th>매도가</th><th>실현손익</th><th>메모</th><th></th></tr></thead>
+          <thead><tr><th>매수날짜</th><th>매도날짜</th><th>종목</th><th>시장</th><th>수량</th><th>매수가</th><th>매도가</th><th>실현손익</th><th></th></tr></thead>
           <tbody id="trade-body"></tbody>
         </table>
       </div>
@@ -556,9 +556,12 @@ tbody td { padding: 12px 16px; vertical-align: middle; }
           </div>
           <div class="fl"><label>항목명</label><input type="text" id="b-item" placeholder="예) 점심식사"></div>
           <div class="fl"><label>금액 (원)</label><input type="number" id="b-amount" placeholder="0" min="0"></div>
-          <div class="fl"><label>메모</label><input type="text" id="b-memo" placeholder="선택사항"></div>
+          <div class="fl" style="grid-column:1/-1"><label>메모</label><textarea id="b-memo" placeholder="선택사항" rows="3" style="resize:vertical;min-height:64px;"></textarea></div>
         </div>
-        <div class="form-actions"><button class="btn btn-primary" onclick="addBudget()">+ 추가</button></div>
+        <div class="form-actions" style="gap:8px;">
+          <button class="btn btn-primary" id="b-submit-btn" onclick="addBudget()">+ 추가</button>
+          <button class="btn" id="b-cancel-btn" onclick="cancelBudgetEdit()" style="display:none;">취소</button>
+        </div>
       </div>
     </div>
     <div class="sec-head">
@@ -992,9 +995,8 @@ function renderTrades() {
       <td class="num">${buyStr}</td>
       <td class="num">${sellStr!=='-'?`<span style="color:var(--red)">${sellStr}</span>`:'-'}</td>
       <td>${p}</td>
-      <td style="color:var(--text2);font-size:.76rem;max-width:160px;white-space:pre-wrap;line-height:1.4;">${t.memo||'—'}</td>
       <td style="white-space:nowrap;"><button class="btn-edit" onclick="editTrade(${ri})">수정</button> <button class="btn-danger" onclick="deleteTrade(${ri})">삭제</button></td>
-    </tr>`;
+    </tr>${t.memo?`<tr><td colspan="9" style="padding:4px 16px 10px;font-size:.76rem;color:var(--text2);line-height:1.5;background:#fafbff;border-bottom:1px solid var(--border2);">📝 ${t.memo}</td></tr>`:''}`;
   }).join('');
 }
 function updateTradeStats() {
@@ -1074,11 +1076,32 @@ function saveDiary() {
 function deleteDiary(i) { if(!confirm('삭제?'))return;diaries.splice(i,1);save();renderDiary();renderCalendar();renderOverview(); }
 
 /* ─ Budget ─ */
+let editBudgetIdx = -1;
 function addBudget() {
   const amt=+document.getElementById('b-amount').value;if(!amt){alert('금액을 입력하세요.');return;}
-  budgets.unshift({date:document.getElementById('b-date').value||today(),type:document.getElementById('b-type').value,cat:document.getElementById('b-cat').value,item:document.getElementById('b-item').value.trim(),amount:amt,memo:document.getElementById('b-memo').value.trim()});
+  const entry={date:document.getElementById('b-date').value||today(),type:document.getElementById('b-type').value,cat:document.getElementById('b-cat').value,item:document.getElementById('b-item').value.trim(),amount:amt,memo:document.getElementById('b-memo').value.trim()};
+  if(editBudgetIdx>=0){budgets[editBudgetIdx]=entry;}else{budgets.unshift(entry);}
+  cancelBudgetEdit();
   save();renderBudget();renderCalendar();renderOverview();
   ['b-item','b-amount','b-memo'].forEach(id=>document.getElementById(id).value='');
+}
+function openBudgetEdit(i) {
+  const b=budgets[i];
+  editBudgetIdx=i;
+  document.getElementById('b-date').value=b.date;
+  document.getElementById('b-type').value=b.type;
+  document.getElementById('b-cat').value=b.cat;
+  document.getElementById('b-item').value=b.item||'';
+  document.getElementById('b-amount').value=b.amount;
+  document.getElementById('b-memo').value=b.memo||'';
+  document.getElementById('b-submit-btn').textContent='수정 완료';
+  document.getElementById('b-cancel-btn').style.display='';
+  document.querySelector('#tab-budget .card').scrollIntoView({behavior:'smooth'});
+}
+function cancelBudgetEdit() {
+  editBudgetIdx=-1;
+  document.getElementById('b-submit-btn').textContent='+ 추가';
+  document.getElementById('b-cancel-btn').style.display='none';
 }
 function renderBudget() {
   const fm=document.getElementById('b-fm').value||thisMonth();document.getElementById('b-fm').value=fm;
@@ -1093,8 +1116,8 @@ function renderBudget() {
   bl.innerHTML=filtered.map(b=>{
     const ri=budgets.indexOf(b),isIn=b.type==='income';
     return `<div class="b-row">
-      <div class="b-left"><div class="b-icon ${isIn?'icon-in':'icon-out'}">${CAT_ICON[b.cat]||'💼'}</div><div><div class="b-name">${b.item||b.cat}</div><div class="b-cat">${b.cat} · ${b.date}</div></div></div>
-      <div style="display:flex;align-items:center;gap:8px;"><div class="b-amount ${isIn?'income':'expense'}">${isIn?'+':'-'}${b.amount.toLocaleString()}원</div><button class="btn-danger" onclick="deleteBudget(${ri})">삭제</button></div>
+      <div class="b-left"><div class="b-icon ${isIn?'icon-in':'icon-out'}">${CAT_ICON[b.cat]||'💼'}</div><div><div class="b-name">${b.item||b.cat}</div><div class="b-cat">${b.cat} · ${b.date}${b.memo?` · <span style="color:var(--text3)">${b.memo}</span>`:''}</div></div></div>
+      <div style="display:flex;align-items:center;gap:8px;"><div class="b-amount ${isIn?'income':'expense'}">${isIn?'+':'-'}${b.amount.toLocaleString()}원</div><button class="btn-edit" onclick="openBudgetEdit(${ri})">수정</button><button class="btn-danger" onclick="deleteBudget(${ri})">삭제</button></div>
     </div>`;
   }).join('');
 }
