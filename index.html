@@ -996,7 +996,7 @@ function renderTrades() {
       <td class="num">${sellStr!=='-'?`<span style="color:var(--red)">${sellStr}</span>`:'-'}</td>
       <td>${p}</td>
       <td style="white-space:nowrap;"><button class="btn-edit" onclick="editTrade(${ri})">수정</button> <button class="btn-danger" onclick="deleteTrade(${ri})">삭제</button></td>
-    </tr>${t.memo?`<tr><td colspan="9" style="padding:4px 16px 10px;font-size:.76rem;color:var(--text2);line-height:1.5;background:#fafbff;border-bottom:1px solid var(--border2);">📝 ${t.memo.replace(/\n/g,'<br>')}</td></tr>`:''}`;
+    </tr>${t.memo?`<tr><td colspan="9" style="padding:4px 16px 10px;font-size:.76rem;color:var(--text2);line-height:1.5;background:#fafbff;border-bottom:1px solid var(--border2);">${t.memo.replace(/\n/g,'<br>')}</td></tr>`:''}`;
   }).join('');
 }
 function updateTradeStats() {
